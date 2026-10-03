@@ -1,2 +1,5 @@
 node_modules/
 dist/
+
+# repowise tooling artifact (local workspace only)
+.repowise/

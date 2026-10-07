@@ -2,9 +2,9 @@
 'use strict';
 
 const STORAGE = { effort: 'deepseek.effort', mode: 'openghost.mode', model: 'openghost.model', catalog: 'openghost.catalog' };
-const KEYS = { openai: 'openai.apiKey', anthropic: 'anthropic.apiKey', deepseek: 'deepseek.apiKey', opencode: 'opencode.apiKey' };
+const KEYS = { openai: 'openai.apiKey', anthropic: 'anthropic.apiKey', deepseek: 'deepseek.apiKey', openrouter: 'openrouter.apiKey', opencode: 'opencode.apiKey' };
 // The order providers appear in, in the settings and in the model picker.
-const ORDER = ['chatgpt', 'openai', 'anthropic', 'deepseek', 'opencode'];
+const ORDER = ['chatgpt', 'openai', 'anthropic', 'deepseek', 'openrouter', 'opencode'];
 // The provider the app starts with: the settings ask for its key when nothing is connected, and new chats take its first
 // model until the user picks another.
 const FIRST_PROVIDER = 'deepseek';
@@ -17,8 +17,10 @@ const LINKS = {
  openai: ['https://platform.openai.com/api-keys', 'platform.openai.com'],
  anthropic: ['https://console.anthropic.com/settings/keys', 'console.anthropic.com'],
  deepseek: ['https://platform.deepseek.com/api_keys', 'platform.deepseek.com'],
+ openrouter: ['https://openrouter.ai/keys', 'openrouter.ai'],
  opencode: ['https://opencode.ai/auth', 'opencode.ai'],
 };
+const PLACEHOLDERS = { anthropic: 'sk-ant-…', openrouter: 'sk-or-…' };
 const MODES = ['ask', 'auto', 'full'];
 const DEFAULT_MODE = 'ask';
 const CHECK_DELAY = 400;
@@ -38,7 +40,7 @@ function keyRow(provider) {
    </div>
    <div class="settings-control">
     <div class="settings-key-box">
-     <input id="settings-key-${provider}" class="settings-key" data-provider="${provider}" type="password" placeholder="${provider === 'anthropic' ? 'sk-ant-…' : 'sk-…'}" autocomplete="off" spellcheck="false">
+     <input id="settings-key-${provider}" class="settings-key" data-provider="${provider}" type="password" placeholder="${PLACEHOLDERS[provider] || 'sk-…'}" autocomplete="off" spellcheck="false">
      <button type="button" class="settings-key-eye" aria-label="${escapeHtml(I18n.t('settings.key.show'))}" aria-pressed="false">${Glyphs.eye}</button>
     </div>
     <p class="settings-status" data-provider="${provider}" role="status"></p>
@@ -180,7 +182,7 @@ class Settings {
  readCatalog() {
   let saved = {};
   try { saved = JSON.parse(localStorage.getItem(STORAGE.catalog)) || {}; } catch {}
-  return { chatgpt: [], openai: [], anthropic: [], deepseek: [], opencode: [], ...saved };
+  return { ...Object.fromEntries(ORDER.map(provider => [provider, []])), ...saved };
  }
 
  saveCatalog() {
@@ -279,6 +281,8 @@ class Settings {
    effort,
    efforts,
    vision: model?.vision !== false,
+   // A model that calls no tools is talked to as a plain chat.
+   tools: model?.tools !== false,
    thinking: model?.thinking,
    output: model?.output,
   };
@@ -376,6 +380,7 @@ class Settings {
    section('openai', 'OpenAI', accountRow() + keyRow('openai')),
    section('anthropic', 'Anthropic', keyRow('anthropic')),
    section('deepseek', 'DeepSeek', keyRow('deepseek')),
+  section('openrouter', 'OpenRouter', keyRow('openrouter')),
    section('opencode', 'OpenCode Go', keyRow('opencode')),
   ].join('');
   this.inputs = {};
